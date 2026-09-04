@@ -9,4 +9,5 @@ openai
 python-dotenv
 passlib
 python-jose[cryptography]
-psycopg2-binary
+asyncpg
+openpyxl
