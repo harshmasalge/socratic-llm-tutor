@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { fetchStudent, fetchStudentSessions, fetchSessionMessages } from '../services/adminApi';
-import type { Session, Message } from '../types/api';
+import type { Session } from '../types/api';
 
   const StudentSessionsPage: React.FC = () => {
   const { studentId } = useParams<{ studentId: string }>();
@@ -62,11 +62,11 @@ const [search, setSearch] = useState('');
 
   const formatDate = (d: string) => new Date(d).toLocaleString();
 
-  const filteredSessions = sessions.filter((s) => {
-    const status = s.ended_at ? 'completed' : 'ongoing';
-    const haystack = `${s.id} ${status} ${formatDate(s.started_at)} ${s.ended_at ? formatDate(s.ended_at) : ''}`.toLowerCase();
-    return haystack.includes(search.toLowerCase());
-  });
+  // // const filteredSessions = sessions.filter((s) => {
+  //   const status = s.ended_at ? 'completed' : 'ongoing';
+  //   const haystack = `${s.id} ${status} ${formatDate(s.started_at)} ${s.ended_at ? formatDate(s.ended_at) : ''}`.toLowerCase();
+  //   return haystack.includes(search.toLowerCase());
+  // });
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-4">

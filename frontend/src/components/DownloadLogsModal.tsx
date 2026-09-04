@@ -38,7 +38,7 @@ const DownloadLogsModal: React.FC<DownloadLogsModalProps> = ({ isOpen, onClose }
       ...(start && { start }),
       ...(end && { end }),
     });
-    const base = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000/api';
+    const base = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
     let url = '';
     if (scope === 'all') {
       url = `${base}/admin/export/all?${params.toString()}`;
