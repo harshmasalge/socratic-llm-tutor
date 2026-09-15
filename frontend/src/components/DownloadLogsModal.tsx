@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchStudents, fetchStudentSessions } from '../services/adminApi';
+import { API_BASE_URL } from '../services/api';
 import type { Student, Session } from '../types/api';
 
 interface DownloadLogsModalProps {
@@ -38,7 +39,7 @@ const DownloadLogsModal: React.FC<DownloadLogsModalProps> = ({ isOpen, onClose }
       ...(start && { start }),
       ...(end && { end }),
     });
-    const base = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+    const base = API_BASE_URL;
     let url = '';
     if (scope === 'all') {
       url = `${base}/admin/export/all?${params.toString()}`;

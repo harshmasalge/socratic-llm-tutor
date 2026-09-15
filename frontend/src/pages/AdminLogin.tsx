@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/api';
 
-const API_URL = 'http://127.0.0.1:8000/api';
+const API_URL = API_BASE_URL;
 
 const AdminLogin: React.FC = () => {
   const [username, setUsername] = useState('admin');

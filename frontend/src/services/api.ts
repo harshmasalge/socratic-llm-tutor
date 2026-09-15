@@ -1,10 +1,11 @@
 import axios from 'axios';
 import type { Student, Session, Message, ChatResponse } from '../types/api';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const rawUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+export const API_BASE_URL = `${rawUrl.replace(/\/+$/, '').replace(/\/api$/, '')}/api`;
 
 const apiClient = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
