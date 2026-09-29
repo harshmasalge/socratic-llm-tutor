@@ -56,9 +56,10 @@ The frontend is a single-page application built with React 19, TypeScript, and V
    * `pages/AdminLogin.tsx`: Submits credentials via OAuth2 form data to `POST /api/admin/login` and stores the resulting JWT token in browser `localStorage`.
    * `components/AdminProtectedRoute.tsx`: Guards administrative routes, redirecting unauthenticated users to `/admin`.
    * `pages/AdminDashboard.tsx`: Allows instructors to inspect and modify runtime configuration (`LLM_MODEL` and `SYSTEM_PROMPT`).
-   * `pages/StudentLogsPage.tsx`: Displays a table of all enrolled students with session counters and navigation to session details.
-   * `pages/StudentSessionsPage.tsx`: Renders all sessions belonging to a specific student, allowing the instructor to review full conversation transcripts.
-   * `components/DownloadLogsModal.tsx`: Provides export options for downloading collected student sessions and messages in CSV or XLSX format.
+   * `pages/StudentLogsPage.tsx`: Displays a searchable table of all enrolled students with an **Export All (.xlsx)** download button.
+   * `pages/StudentSessionsPage.tsx`: Renders all sessions for a specific student (message counts, status, timestamps) with an **Export Student (.xlsx)** button and links to the per-session transcript.
+   * `pages/ConversationPage.tsx`: Full chat-bubble view of all messages in a single session, with an **Export Session (.xlsx)** download button.
+
 
 3. **API Service Clients (`frontend/src/services/`):**
    * `api.ts`: Houses Axios client methods for student, session, and chat operations using `import.meta.env.VITE_API_URL`.
@@ -78,7 +79,7 @@ The backend is an asynchronous FastAPI application organized into standard layer
   * `student.py`: Handles student registration and retrieval based on roll number uniqueness.
   * `session.py`: Handles session creation and per-student session enumeration.
   * `chat.py`: Handles sending chat messages, saving conversation history, and querying the tutor response.
-  * `admin.py`: Handles admin authentication (JWT issuance), configuration reads/updates, student and session log inspection, and data export.
+  * `admin.py`: Handles admin authentication (JWT issuance), configuration reads/updates, student and session log inspection, and data export (`/export/all`, `/export/student/{id}`, `/export/session/{id}`) in XLSX and CSV formats.
 
 * **Core & Security (`core/`):**
   * `config.py`: Loads environment configurations via `pydantic-settings` (`Settings`), defining database URL, JWT secret, algorithm, expiration, and default hashed admin credentials.

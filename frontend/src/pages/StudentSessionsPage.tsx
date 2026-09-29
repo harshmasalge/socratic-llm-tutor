@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { fetchStudent, fetchStudentSessions, fetchSessionMessages } from '../services/adminApi';
+import { fetchStudent, fetchStudentSessions, fetchSessionMessages, downloadStudentExport } from '../services/adminApi';
 import type { Session } from '../types/api';
 
   const StudentSessionsPage: React.FC = () => {
@@ -30,7 +30,20 @@ import type { Session } from '../types/api';
   const [msgCounts, setMsgCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-const [search, setSearch] = useState('');
+  const [search, setSearch] = useState('');
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadStudent = async () => {
+    if (!studentId) return;
+    setDownloading(true);
+    try {
+      await downloadStudentExport(studentId);
+    } catch (e: any) {
+      alert('Download failed: ' + (e?.response?.data?.detail || e.message));
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   // Load sessions on mount
   useEffect(() => {
@@ -70,9 +83,18 @@ const [search, setSearch] = useState('');
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-4">
-      <Link to="/admin/logs" className="text-blue-600 hover:underline mb-4 inline-block">
-        ← Back to Students
-      </Link>
+      <div className="flex items-center justify-between mb-4">
+        <Link to="/admin/logs" className="text-blue-600 hover:underline">
+          ← Back to Students
+        </Link>
+        <button
+          onClick={handleDownloadStudent}
+          disabled={downloading}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+        >
+          {downloading ? 'Downloading…' : '⬇ Export Student (.xlsx)'}
+        </button>
+      </div>
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
         <div className="mb-4">
           <input

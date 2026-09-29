@@ -8,6 +8,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import StudentLogsPage from './pages/StudentLogsPage';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import StudentSessionsPage from './pages/StudentSessionsPage';
+import ConversationPage from './pages/ConversationPage';
 
 function App() {
   return (
@@ -37,6 +38,14 @@ function App() {
           element={
             <AdminProtectedRoute>
               <StudentSessionsPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/logs/:studentId/:sessionId"
+          element={
+            <AdminProtectedRoute>
+              <ConversationPage />
             </AdminProtectedRoute>
           }
         />

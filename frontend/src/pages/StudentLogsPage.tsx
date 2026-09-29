@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchStudents } from '../services/adminApi';
+import { fetchStudents, downloadAllExport } from '../services/adminApi';
 import type { Student } from '../types/api';
 
 const StudentLogsPage: React.FC = () => {
@@ -9,6 +9,19 @@ const StudentLogsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [downloading, setDownloading] = useState(false);
+
+  const handleExportAll = async () => {
+    setDownloading(true);
+    try {
+      await downloadAllExport('xlsx');
+    } catch (e: any) {
+      alert('Download failed: ' + (e?.response?.data?.detail || e.message));
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const filteredStudents = students.filter((s) => {
     const haystack = `${s.id} ${s.name} ${s.roll_no}`.toLowerCase();
     return haystack.includes(search.toLowerCase());
@@ -37,7 +50,16 @@ const StudentLogsPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-4">
-      <h2 className="text-2xl font-bold mb-4">Student Logs</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold">Student Logs</h2>
+        <button
+          onClick={handleExportAll}
+          disabled={downloading}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+        >
+          {downloading ? 'Downloading…' : '⬇ Export All (.xlsx)'}
+        </button>
+      </div>
       <div className="mb-4">
         <input
           type="text"

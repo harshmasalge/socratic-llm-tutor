@@ -1,3 +1,4 @@
+import io
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -105,13 +106,16 @@ def _create_workbook(students, sessions, messages, include_summary=False):
         ws_students.append([s.id, s.name, s.roll_no, s.created_at])
     ws_sessions = wb.create_sheet(title="Sessions")
     ws_sessions.append(["session_id", "student_id", "started_at", "ended_at", "status", "message_count"])
+    # Build lookup: session_id -> student_id (avoids async lazy-load on m.session)
+    session_student_map = {sess.id: sess.student_id for sess in sessions}
     for sess in sessions:
         status = "ongoing" if not sess.ended_at else "completed"
         ws_sessions.append([sess.id, sess.student_id, sess.started_at, sess.ended_at, status, ""])
     ws_messages = wb.create_sheet(title="Messages")
     ws_messages.append(["message_id", "session_id", "student_id", "role", "content", "timestamp"])
     for m in messages:
-        ws_messages.append([m.id, m.session_id, getattr(m.session, 'student_id', ''), m.role, m.content, m.timestamp])
+        student_id = session_student_map.get(m.session_id, "")
+        ws_messages.append([m.id, m.session_id, student_id, m.role, m.content, m.timestamp])
     if include_summary:
         ws_summary = wb.create_sheet(title="Summary")
         ws_summary.append(["total_students", "total_sessions", "total_messages"])
@@ -173,11 +177,12 @@ async def export_all(
         return StreamingResponse(bio, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                  headers={"Content-Disposition": f"attachment; filename={filename}"})
     else:  # csv
+        session_student_map = {sess.id: sess.student_id for sess in sessions}
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(["message_id", "session_id", "student_id", "role", "content", "timestamp"])
         for m in messages:
-            writer.writerow([m.id, m.session_id, getattr(m.session, 'student_id', ''), m.role, m.content, m.timestamp])
+            writer.writerow([m.id, m.session_id, session_student_map.get(m.session_id, ''), m.role, m.content, m.timestamp])
         bio = io.BytesIO(output.getvalue().encode())
         return StreamingResponse(bio, media_type="text/csv",
                                  headers={"Content-Disposition": f"attachment; filename={filename}"})

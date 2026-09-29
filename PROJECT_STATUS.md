@@ -42,7 +42,11 @@ The following components are implemented and functional based on existing codeba
   * `PUT /api/admin/config`: Dynamically updates model and system prompt in the database without requiring server restart.
   * `GET /api/admin/students`: Lists all registered students.
   * `GET /api/admin/students/{student_id}`: Returns student details with their associated sessions.
+  * `GET /api/admin/students/{student_id}/sessions`: Returns all sessions for a student.
   * `GET /api/admin/students/{student_id}/sessions/{session_id}`: Returns messages for a specific student session.
+  * `GET /api/admin/export/all`: Exports all students, sessions, and messages as `.xlsx` or `.csv`. Supports optional `start`/`end` datetime filters.
+  * `GET /api/admin/export/student/{student_id}`: Exports all sessions and messages for a single student as `.xlsx`.
+  * `GET /api/admin/export/session/{session_id}`: Exports all messages for a single session as `.xlsx`.
 
 ### Frontend (`frontend/src/`)
 * **Student Experience:**
@@ -50,11 +54,26 @@ The following components are implemented and functional based on existing codeba
   * `StudentChat.tsx`: Two-pane interface featuring session creation, session history list, active chat message display, and question input.
 * **Admin Experience:**
   * `AdminLogin.tsx`: Admin login form saving JWT to `localStorage`.
-  * `AdminDashboard.tsx`: Controls for editing system prompt and model identifier.
-  * `StudentLogsPage.tsx`: Table listing students with navigation to session logs and export modal.
-  * `StudentSessionsPage.tsx`: Detailed view of sessions and message transcripts for an individual student.
-  * `DownloadLogsModal.tsx`: Interface for exporting logs in XLSX or CSV format.
+  * `AdminDashboard.tsx`: Controls for editing system prompt and model identifier, with a link to Student Logs.
+  * `StudentLogsPage.tsx`: Table listing all enrolled students with search and an **Export All (.xlsx)** download button.
+  * `StudentSessionsPage.tsx`: Table of all sessions for a student (with message counts, status, timestamps) and an **Export Student (.xlsx)** download button. Links to the conversation view for each session.
+  * `ConversationPage.tsx`: Full chat-bubble transcript view for a single session, with an **Export Session (.xlsx)** download button.
   * `AdminProtectedRoute.tsx`: Route guard checking for `admin_token` before rendering administrative views.
+
+### API Client (`frontend/src/services/adminApi.ts`)
+  * `fetchStudents`, `fetchStudent`, `fetchStudentSessions`, `fetchSessionMessages` — authenticated read helpers.
+  * `downloadAllExport(format, start?, end?)` — triggers browser download of all data export.
+  * `downloadStudentExport(studentId)` — triggers browser download of per-student export.
+  * `downloadSessionExport(sessionId)` — triggers browser download of per-session export.
+
+### Routing (`frontend/src/App.tsx`)
+  * `/` → `StudentLogin`
+  * `/chat` → `StudentChat`
+  * `/admin` → `AdminLogin`
+  * `/admin/dashboard` → `AdminDashboard` *(protected)*
+  * `/admin/logs` → `StudentLogsPage` *(protected)*
+  * `/admin/logs/:studentId` → `StudentSessionsPage` *(protected)*
+  * `/admin/logs/:studentId/:sessionId` → `ConversationPage` *(protected)*
 
 ---
 
@@ -70,15 +89,15 @@ The following components are implemented and functional based on existing codeba
 
 ## 5. Known Issues and Inconsistencies (Documented for Future Sessions)
 
-> [!WARNING]
-> These issues exist in the current codebase. Under safety constraints, they have been left untouched for future resolution.
+> [!NOTE]
+> Issues 1 and 2 from the previous snapshot have been resolved. Remaining item is a structural / environment concern only.
 
-1. **Missing `io` Import in Admin Export Route (`backend/app/api/admin.py`):**
-   * Endpoint `GET /api/admin/export/all` utilizes `io.BytesIO()` (line 122) and `io.StringIO()` (line 183), but `import io` is not included in the file imports. Calling this endpoint will result in an unhandled `NameError`.
-2. **Missing ORM Relationship on Message (`backend/app/api/admin.py`):**
-   * In `admin.py` line 114, `getattr(m.session, 'student_id', '')` attempts to traverse `m.session`. However, `Message` in `backend/app/models/domain.py` does not define a SQLAlchemy `relationship` for `session`, so this attribute access will not resolve student ID directly from `m`.
+1. **[RESOLVED] Missing `io` Import in Admin Export Route (`backend/app/api/admin.py`):**
+   * `import io` was added. Export endpoints no longer crash with `NameError`.
+2. **[RESOLVED] Incorrect ORM Relationship Access on Message (`backend/app/api/admin.py`):**
+   * `_create_workbook` previously called `getattr(m.session, 'student_id', '')`, which triggered an `AttributeError` because `Message` has no `session` relationship loaded in async context. Fixed by building a `{session_id: student_id}` lookup dict from the `sessions` list passed into the function. Same fix applied to the CSV export path in `export_all`.
 3. **[RESOLVED] Standardized Frontend API Base URL:**
-   * Replaced hardcoded `http://127.0.0.1:8000/api` instances across `adminApi.ts`, `AdminLogin.tsx`, `AdminDashboard.tsx`, and `DownloadLogsModal.tsx` with a centralized, normalized `API_BASE_URL` exported from `api.ts`.
+   * Replaced hardcoded `http://127.0.0.1:8000/api` instances across service files with a centralized, normalized `API_BASE_URL` exported from `api.ts`.
 4. **Discrepancy Between Local Database and Docker Specification:**
    * `backend/app/core/config.py` defaults to SQLite (`sqlite+aiosqlite:///./socratic.db`), whereas `initial_system_design.md` and `docker-compose.yml` designate PostgreSQL. Local development currently operates purely on SQLite.
 
@@ -88,8 +107,8 @@ The following components are implemented and functional based on existing codeba
 
 *(Determined strictly from code state and project specification)*
 
-1. **Bugfixes:** Resolve the `import io` and ORM relationship issues in `backend/app/api/admin.py` when safe to do so.
-2. **Configuration Alignment:** Consolidate frontend API base URLs to use environment variables consistently.
-3. **Database Environment Support:** Add optional PostgreSQL connection string support via environment variable in `backend/app/core/config.py` so the application can alternate seamlessly between SQLite and PostgreSQL in Docker.
-4. **Markdown Rendering in Student Chat:** Render assistant responses with markdown/math support if formatted Socratic questions require LaTeX or structured text.
-5. **Formal Automated Testing:** Set up automated tests (e.g. `pytest` for backend API routes and `vitest` for frontend components) to augment the existing manual scripts (`test.py`, `test-admin.ps1`).
+1. **Database Environment Support:** Add optional PostgreSQL connection string support via environment variable in `backend/app/core/config.py` so the application can alternate seamlessly between SQLite and PostgreSQL in Docker.
+2. **Markdown Rendering in Student Chat:** Render assistant responses with markdown/math support if formatted Socratic questions require LaTeX or structured text.
+3. **Message Count in Sessions Sheet:** The `message_count` column in the Sessions worksheet of exported `.xlsx` files is currently left blank. It could be populated by cross-referencing the messages list during workbook construction.
+4. **Formal Automated Testing:** Set up automated tests (e.g. `pytest` for backend API routes and `vitest` for frontend components) to augment the existing manual scripts (`test.py`, `test-admin.ps1`).
+5. **Date-range UI for Export All:** The `downloadAllExport` helper accepts `start`/`end` datetime parameters but the frontend has no date-picker UI for them yet. The export always downloads all data.
